@@ -43,17 +43,22 @@ async function loadFromGitHub(){
       let parsed = JSON.parse(content);
       customers = parsed.customers || [];
   }
+
   // Ürün listesi
   let prodUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/products.json`;
   let res2 = await fetch(prodUrl, { headers: { "Authorization": "token " + TOKEN }});
   if(res2.ok){
       let data = await res2.json();
       let content = atob(data.content);
-      products = JSON.parse(content);
+      products = JSON.parse(content);   // ürünler burada
+  } else {
+      products = []; // hiç ürün yoksa boş array
   }
+
   saveData();
   loadCustomers();
 }
+
 
 function saveData(){
   localStorage.setItem('mezeData', JSON.stringify({customers,products}));
@@ -167,6 +172,10 @@ function renderCustomer() {
 
 // ---------- SİPARİŞ EKLEME ----------
 function addProductLine() {
+  if(products.length === 0){
+    alert("Ürün listesi yüklenmedi! Lütfen Ürün Yönetimi'nden ürün ekleyin.");
+    return;
+  }
   let container = document.getElementById('productLines');
   let div = document.createElement('div');
   div.className="flex";
@@ -184,6 +193,7 @@ function addProductLine() {
   container.appendChild(div);
   updatePrice(div.querySelector('.productSelect'));
 }
+
 
 function resetProductLines(){
   document.getElementById('productLines').innerHTML="";
