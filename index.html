@@ -38,6 +38,7 @@
   <input type="text" id="repoName" placeholder="Repo Adı (örn: meze-finans)">
   <input type="password" id="tokenInput" placeholder="GitHub Token">
   <button onclick="login()">Giriş</button>
+  <button onclick="clearStorage()">Bilgileri Temizle</button>
   <p id="loginError" style="color:red;"></p>
 </div>
 
@@ -97,6 +98,13 @@
 </div>
 
 <script>
+  const APP_VERSION = "1.1"; 
+  if(localStorage.getItem("appVersion") !== APP_VERSION){
+    localStorage.clear();
+    localStorage.setItem("appVersion", APP_VERSION);
+  }
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister())); }
+
   let password = "170714";
   let customers = [];
   let products = [
@@ -110,6 +118,14 @@
     {name:"İçli Köfte", unit:"adet", price:45}
   ];
   let GITHUB_USERNAME, REPO_NAME, TOKEN;
+
+  function clearStorage(){
+    localStorage.removeItem('mezeGithubUser');
+    localStorage.removeItem('mezeRepo');
+    localStorage.removeItem('mezeToken');
+    alert("Bilgiler temizlendi!");
+    location.reload();
+  }
 
   async function login() {
     let pass = document.getElementById('password').value;
