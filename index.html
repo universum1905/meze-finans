@@ -4,29 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meze Finans</title>
-  <link rel="stylesheet" href="style.css?v=1.5">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial; background:#f8f8f8; }
+    .container { max-width:900px; margin:20px auto; background:white; padding:15px; border-radius:8px; }
+    input, select, button { width:100%; padding:8px; margin:5px 0; border:1px solid #ccc; border-radius:4px; }
+    button { background:#2e7d32; color:white; border:none; cursor:pointer; }
+    button:hover { background:#1b5e20; }
+    .flex { display:flex; gap:10px; }
+    .flex input, .flex select { flex:1; }
+    .customer-item { padding:10px; border-bottom:1px solid #ddd; cursor:pointer; }
+    .order-header { background:#eee; padding:8px; display:flex; justify-content:space-between; cursor:pointer; }
+    .order-details { padding:8px; background:#fafafa; }
+  </style>
 </head>
 <body>
-<header>
-  <img src="logo.jpeg" alt="Logo" style="height:40px; vertical-align:middle;"> Meze Finans
-</header>
-
-<div class="container" id="loginPage">
-  <h2>Giriş Yap</h2>
-  <input type="password" id="password" placeholder="Şifre">
-  <input type="text" id="githubUser" placeholder="GitHub Kullanıcı Adı">
-  <input type="text" id="repoName" placeholder="Repo Adı (örn: meze-finans)">
-  <input type="password" id="tokenInput" placeholder="GitHub Token">
-  <button onclick="login()">Giriş</button>
-  <button onclick="clearStorage()">Bilgileri Temizle</button>
-  <p id="loginError" style="color:red;"></p>
-</div>
-
-<div class="container hidden" id="mainPage">
-  <div class="nav">
-    <button onclick="openProductPage()">Ürün Yönetimi</button>
-  </div>
+<div class="container">
   <h2>Müşteriler</h2>
   <div id="customerList"></div>
   <h3>Yeni Müşteri Ekle</h3>
@@ -35,18 +28,13 @@
 </div>
 
 <div class="container hidden" id="customerPage">
-  <div class="nav">
-    <button onclick="backToMain()">← Geri</button>
-  </div>
+  <button onclick="backToMain()">← Geri</button>
   <h2 id="customerNameTitle" contenteditable="true" onblur="updateCustomerName()"></h2>
-  <div class="balance" id="balanceInfo"></div>
-  <button onclick="generatePDF()">PDF Oluştur</button>
-  <button onclick="pushCustomers()">Müşteri Verisini Kaydet</button>
+  <div id="balanceInfo"></div>
 
   <h3>Siparişler</h3>
   <div id="ordersList"></div>
   <h4>Yeni Sipariş</h4>
-  <label for="orderDate">Tarih Gir:</label>
   <input type="date" id="orderDate">
   <div id="productLines"></div>
   <button onclick="addProductLine()">+ Ürün Satırı</button>
@@ -55,32 +43,12 @@
   <h3>Ödemeler</h3>
   <div id="paymentsList"></div>
   <h4>Yeni Ödeme</h4>
-  <label for="paymentDate">Tarih Gir:</label>
   <input type="date" id="paymentDate">
   <input type="number" id="paymentAmount" placeholder="Tutar (TL)">
-  <select id="paymentType">
-    <option>Nakit</option><option>Havale</option><option>POS</option>
-  </select>
+  <select id="paymentType"><option>Nakit</option><option>Havale</option><option>POS</option></select>
   <button onclick="savePayment()">Ödeme Kaydet</button>
 </div>
 
-<div class="container hidden" id="productPage">
-  <div class="nav">
-    <button onclick="backToMain()">← Geri</button>
-  </div>
-  <h2>Ürün Yönetimi</h2>
-  <div id="productList"></div>
-  <h3>Yeni Ürün Ekle</h3>
-  <input type="text" id="newProductName" placeholder="Ürün Adı">
-  <select id="newProductUnit">
-    <option value="kg">kg</option>
-    <option value="adet">adet</option>
-  </select>
-  <input type="number" id="newProductPrice" placeholder="Birim Fiyat (TL)">
-  <button onclick="addProduct()">Ürün Ekle</button>
-  <button onclick="pushProducts()">Ürün Listesini Kaydet</button>
-</div>
-
-<script src="script.js?v=1.5"></script>
+<script src="script.js"></script>
 </body>
 </html>
