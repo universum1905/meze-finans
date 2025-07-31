@@ -1,13 +1,3 @@
 {
-  "customers": [],
-  "products": [
-    { "name": "Pancarlı Kısır", "unit": "kg", "price": 380 },
-    { "name": "Kısır", "unit": "kg", "price": 380 },
-    { "name": "Ezme", "unit": "kg", "price": 380 },
-    { "name": "Haydari", "unit": "kg", "price": 380 },
-    { "name": "Y. Köz Biber", "unit": "kg", "price": 380 },
-    { "name": "Pembe Sultan", "unit": "kg", "price": 380 },
-    { "name": "Sarma", "unit": "kg", "price": 400 },
-    { "name": "İçli Köfte", "unit": "adet", "price": 45 }
-  ]
+  "customers": []
 }

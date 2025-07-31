@@ -1,0 +1,33 @@
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f8f8f8; }
+header { background:#2e7d32; color:white; padding:10px; text-align:center; font-size:1.5em; }
+.container { max-width:900px; margin:20px auto; background:white; padding:15px; border-radius:8px; box-shadow:0 0 5px rgba(0,0,0,0.1); }
+h2 { margin-top:0; }
+.hidden { display:none; }
+input, select, button { width:100%; padding:8px; margin:5px 0; border:1px solid #ccc; border-radius:4px; }
+button { background:#2e7d32; color:white; border:none; cursor:pointer; }
+button:hover { background:#1b5e20; }
+.customer-item { padding:10px; border-bottom:1px solid #ddd; cursor:pointer; }
+.order-header { background:#eee; padding:8px; cursor:pointer; display:flex; justify-content:space-between; }
+.order-details { padding:8px; background:#fafafa; }
+.flex { display:flex; gap:10px; }
+.flex input, .flex select { flex:1; }
+.balance { font-weight:bold; font-size:1.2em; color:#d32f2f; margin:10px 0; }
+.nav { margin-bottom:10px; }
+.nav button { width:auto; margin-right:5px; }
+@media(max-width:600px) { .flex { flex-direction:column; } }
+
+/* Özel placeholder için */
+.date-wrapper { position: relative; }
+.date-placeholder {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  pointer-events: none;
+  font-size: 14px;
+}
+.date-wrapper input:focus + .date-placeholder,
+.date-wrapper input:not(:placeholder-shown) + .date-placeholder {
+  display: none;
+}
