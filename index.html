@@ -20,6 +20,8 @@
     .flex { display:flex; gap:10px; }
     .flex input, .flex select { flex:1; }
     .balance { font-weight:bold; font-size:1.2em; color:#d32f2f; margin:10px 0; }
+    .nav { margin-bottom:10px; }
+    .nav button { width:auto; margin-right:5px; }
     @media(max-width:600px) { .flex { flex-direction:column; } }
   </style>
 </head>
@@ -40,6 +42,9 @@
 </div>
 
 <div class="container hidden" id="mainPage">
+  <div class="nav">
+    <button onclick="openProductPage()">Ürün Yönetimi</button>
+  </div>
   <h2>Müşteriler</h2>
   <div id="customerList"></div>
   <h3>Yeni Müşteri Ekle</h3>
@@ -48,7 +53,9 @@
 </div>
 
 <div class="container hidden" id="customerPage">
-  <button onclick="backToMain()">← Geri</button>
+  <div class="nav">
+    <button onclick="backToMain()">← Geri</button>
+  </div>
   <h2 id="customerNameTitle" contenteditable="true" onblur="updateCustomerName()"></h2>
   <div class="balance" id="balanceInfo"></div>
   <button onclick="generatePDF()">PDF Oluştur</button>
@@ -58,20 +65,7 @@
   <div id="ordersList"></div>
   <h4>Yeni Sipariş</h4>
   <input type="date" id="orderDate">
-  <div id="productLines">
-    <div class="flex">
-      <select class="productName">
-        <option>Pancarlı Kısır</option><option>Kısır</option><option>Ezme</option>
-        <option>Haydari</option><option>Y. Köz Biber</option><option>Pembe Sultan</option>
-        <option>Sarma</option><option>İçli Köfte</option>
-      </select>
-      <select class="productQty">
-        <option value="0.5">0.5</option><option value="1">1</option><option value="1.5">1.5</option>
-        <option value="2">2</option><option value="2.5">2.5</option><option value="3">3</option>
-      </select>
-      <input type="number" class="productPrice" placeholder="Fiyat (TL)">
-    </div>
-  </div>
+  <div id="productLines"></div>
   <button onclick="addProductLine()">+ Ürün Satırı</button>
   <button onclick="saveOrder()">Sipariş Kaydet</button>
 
@@ -86,9 +80,30 @@
   <button onclick="savePayment()">Ödeme Kaydet</button>
 </div>
 
+<div class="container hidden" id="productPage">
+  <div class="nav">
+    <button onclick="backToMain()">← Geri</button>
+  </div>
+  <h2>Ürün Yönetimi</h2>
+  <div id="productList"></div>
+  <h3>Yeni Ürün Ekle</h3>
+  <input type="text" id="newProductName" placeholder="Ürün Adı">
+  <select id="newProductUnit">
+    <option value="kg">kg</option>
+    <option value="adet">adet</option>
+  </select>
+  <input type="number" id="newProductPrice" placeholder="Birim Fiyat (TL)">
+  <button onclick="addProduct()">Ürün Ekle</button>
+</div>
+
 <script>
   let password = "170714";
   let customers = [];
+  let products = [
+    {name:"İçli Köfte", unit:"adet", price:45},
+    {name:"Sarma", unit:"kg", price:400},
+    {name:"Meze", unit:"kg", price:380}
+  ];
   let GITHUB_USERNAME, REPO_NAME, TOKEN;
 
   async function login() {
@@ -112,21 +127,30 @@
     if(res.ok){
       let data = await res.json();
       let content = atob(data.content);
-      customers = JSON.parse(content).customers || [];
-    } else {
-      customers = [];
+      let parsed = JSON.parse(content);
+      customers = parsed.customers || [];
+      products = parsed.products || products;
     }
     saveData();
     loadCustomers();
   }
 
-  function addCustomer() {
-    let name = document.getElementById('newCustomerName').value;
-    if(!name) return;
-    customers.push({name:name, orders:[], payments:[]});
-    document.getElementById('newCustomerName').value="";
-    saveData();
-    loadCustomers();
+  function saveData(){
+    localStorage.setItem('mezeData', JSON.stringify({customers,products}));
+  }
+
+  async function pushToGitHub(){
+    let content = btoa(JSON.stringify({customers,products}, null, 2));
+    let url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/mezeData.json`;
+    let res = await fetch(url, { headers: { "Authorization": "token " + TOKEN } });
+    let data = await res.json();
+    let sha = data.sha;
+    await fetch(url, {
+      method: "PUT",
+      headers: { "Authorization": "token " + TOKEN, "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Meze Finans Güncelleme", content: content, sha: sha })
+    });
+    alert("Veriler GitHub'a kaydedildi!");
   }
 
   function loadCustomers() {
@@ -141,6 +165,15 @@
     });
   }
 
+  function addCustomer() {
+    let name = document.getElementById('newCustomerName').value;
+    if(!name) return;
+    customers.push({name:name, orders:[], payments:[]});
+    document.getElementById('newCustomerName').value="";
+    saveData();
+    loadCustomers();
+  }
+
   let currentCustomerIndex = -1;
 
   function openCustomer(i) {
@@ -149,10 +182,12 @@
     document.getElementById('customerPage').classList.remove('hidden');
     document.getElementById('customerNameTitle').textContent = customers[i].name;
     renderCustomer();
+    resetProductLines();
   }
 
   function backToMain() {
     document.getElementById('customerPage').classList.add('hidden');
+    document.getElementById('productPage').classList.add('hidden');
     document.getElementById('mainPage').classList.remove('hidden');
     saveData();
     loadCustomers();
@@ -164,28 +199,95 @@
     loadCustomers();
   }
 
+  function calcBalance(cust) {
+    let totalOrders = cust.orders.reduce((s,o)=>s+o.total,0);
+    let totalPayments = cust.payments.reduce((s,p)=>s+p.amount,0);
+    return (totalOrders - totalPayments).toFixed(2);
+  }
+
+  function renderCustomer() {
+    let cust = customers[currentCustomerIndex];
+    document.getElementById('balanceInfo').textContent = "Bakiye: " + calcBalance(cust) + " TL";
+    let ordersList = document.getElementById('ordersList'); ordersList.innerHTML="";
+    cust.orders.forEach((o) => {
+      let div = document.createElement('div');
+      let header = document.createElement('div');
+      header.className="order-header";
+      header.innerHTML = `<span>${o.date}</span><span>${o.total} TL</span>`;
+      let details = document.createElement('div'); details.className="order-details hidden";
+      o.items.forEach(it=>{
+        let p = document.createElement('p');
+        p.textContent = `${it.name} - ${it.qty} ${it.unit} - ${it.price} TL`;
+        details.appendChild(p);
+      });
+      header.onclick = ()=>details.classList.toggle('hidden');
+      div.appendChild(header); div.appendChild(details); ordersList.appendChild(div);
+    });
+    let paymentsList = document.getElementById('paymentsList'); paymentsList.innerHTML="";
+    cust.payments.forEach(p=>{
+      let line = document.createElement('p'); line.textContent = `${p.date} - ${p.amount} TL (${p.type})`;
+      paymentsList.appendChild(line);
+    });
+  }
+
   function addProductLine() {
     let container = document.getElementById('productLines');
     let div = document.createElement('div');
     div.className="flex";
-    div.innerHTML = document.querySelector('.flex').innerHTML;
+    div.innerHTML = `
+      <select class="productSelect" onchange="updatePrice(this)">
+        ${products.map(p=>`<option value="${p.name}">${p.name}</option>`).join("")}
+      </select>
+      <input type="number" class="productQty" value="1" step="0.5" onchange="recalculateLine(this)">
+      <select class="productUnit">
+        <option value="kg">kg</option>
+        <option value="adet">adet</option>
+      </select>
+      <input type="number" class="productPrice" placeholder="Fiyat (TL)">
+    `;
     container.appendChild(div);
+    updatePrice(div.querySelector('.productSelect'));
+  }
+
+  function resetProductLines(){
+    document.getElementById('productLines').innerHTML="";
+    addProductLine();
+  }
+
+  function updatePrice(select){
+    let div = select.parentElement;
+    let product = products.find(p=>p.name===select.value);
+    div.querySelector('.productUnit').value = product.unit;
+    let qty = parseFloat(div.querySelector('.productQty').value);
+    div.querySelector('.productPrice').value = (product.price * qty).toFixed(2);
+  }
+
+  function recalculateLine(input){
+    let div = input.parentElement;
+    let product = products.find(p=>p.name===div.querySelector('.productSelect').value);
+    let qty = parseFloat(input.value);
+    div.querySelector('.productPrice').value = (product.price * qty).toFixed(2);
   }
 
   function saveOrder() {
     let date = document.getElementById('orderDate').value;
     if(!date) return alert("Tarih gerekli!");
-    let names = document.querySelectorAll('.productName');
+    let selects = document.querySelectorAll('.productSelect');
     let qtys = document.querySelectorAll('.productQty');
+    let units = document.querySelectorAll('.productUnit');
     let prices = document.querySelectorAll('.productPrice');
     let items = [], total = 0;
-    for(let i=0;i<names.length;i++){
-      let n = names[i].value, q = parseFloat(qtys[i].value), p = parseFloat(prices[i].value)||0;
-      total += p; items.push({name:n, qty:q, price:p});
+    for(let i=0;i<selects.length;i++){
+      let n = selects[i].value;
+      let q = parseFloat(qtys[i].value);
+      let u = units[i].value;
+      let p = parseFloat(prices[i].value)||0;
+      total += p;
+      items.push({name:n, qty:q, unit:u, price:p});
     }
     customers[currentCustomerIndex].orders.push({date:date, items:items, total:total});
     document.getElementById('orderDate').value="";
-    document.getElementById('productLines').innerHTML=document.querySelector('.flex').outerHTML;
+    resetProductLines();
     saveData();
     renderCustomer();
   }
@@ -202,53 +304,40 @@
     renderCustomer();
   }
 
-  function renderCustomer() {
-    let cust = customers[currentCustomerIndex];
-    document.getElementById('balanceInfo').textContent = "Bakiye: " + calcBalance(cust) + " TL";
-    let ordersList = document.getElementById('ordersList'); ordersList.innerHTML="";
-    cust.orders.forEach((o) => {
+  function openProductPage(){
+    document.getElementById('mainPage').classList.add('hidden');
+    document.getElementById('productPage').classList.remove('hidden');
+    renderProductList();
+  }
+
+  function renderProductList(){
+    let list = document.getElementById('productList');
+    list.innerHTML="";
+    products.forEach((p,i)=>{
       let div = document.createElement('div');
-      let header = document.createElement('div');
-      header.className="order-header";
-      header.innerHTML = `<span>${o.date}</span><span>${o.total} TL</span>`;
-      let details = document.createElement('div'); details.className="order-details hidden";
-      o.items.forEach(it=>{
-        let p = document.createElement('p');
-        p.textContent = `${it.name} - ${it.qty} kg/adet - ${it.price} TL`;
-        details.appendChild(p);
-      });
-      header.onclick = ()=>details.classList.toggle('hidden');
-      div.appendChild(header); div.appendChild(details); ordersList.appendChild(div);
-    });
-    let paymentsList = document.getElementById('paymentsList'); paymentsList.innerHTML="";
-    cust.payments.forEach(p=>{
-      let line = document.createElement('p'); line.textContent = `${p.date} - ${p.amount} TL (${p.type})`;
-      paymentsList.appendChild(line);
+      div.className="flex";
+      div.innerHTML = `
+        <input value="${p.name}" onchange="products[${i}].name=this.value; saveData();">
+        <select onchange="products[${i}].unit=this.value; saveData();">
+          <option value="kg" ${p.unit==="kg"?"selected":""}>kg</option>
+          <option value="adet" ${p.unit==="adet"?"selected":""}>adet</option>
+        </select>
+        <input type="number" value="${p.price}" onchange="products[${i}].price=parseFloat(this.value)||0; saveData();">
+      `;
+      list.appendChild(div);
     });
   }
 
-  function calcBalance(cust) {
-    let totalOrders = cust.orders.reduce((s,o)=>s+o.total,0);
-    let totalPayments = cust.payments.reduce((s,p)=>s+p.amount,0);
-    return (totalOrders - totalPayments).toFixed(2);
-  }
-
-  function saveData(){
-    localStorage.setItem('mezeData', JSON.stringify(customers));
-  }
-
-  async function pushToGitHub(){
-    let content = btoa(JSON.stringify({customers:customers}, null, 2));
-    let url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/mezeData.json`;
-    let res = await fetch(url, { headers: { "Authorization": "token " + TOKEN } });
-    let data = await res.json();
-    let sha = data.sha;
-    await fetch(url, {
-      method: "PUT",
-      headers: { "Authorization": "token " + TOKEN, "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "Meze Finans Otomatik Güncelleme", content: content, sha: sha })
-    });
-    alert("Veriler GitHub'a kaydedildi!");
+  function addProduct(){
+    let name = document.getElementById('newProductName').value;
+    let unit = document.getElementById('newProductUnit').value;
+    let price = parseFloat(document.getElementById('newProductPrice').value)||0;
+    if(!name) return;
+    products.push({name,unit,price});
+    document.getElementById('newProductName').value="";
+    document.getElementById('newProductPrice').value="";
+    saveData();
+    renderProductList();
   }
 
   async function generatePDF(){
@@ -263,7 +352,7 @@
     cust.orders.forEach(o=>{
       doc.text(o.date+" - Toplam: "+o.total+" TL",10,y); y+=10;
       o.items.forEach(it=>{
-        doc.text("   "+it.name+" - "+it.qty+" - "+it.price+" TL",15,y); y+=10;
+        doc.text("   "+it.name+" - "+it.qty+" "+it.unit+" - "+it.price+" TL",15,y); y+=10;
       });
     });
     y+=10; doc.text("Ödemeler:",10,y); y+=10;
@@ -276,7 +365,11 @@
 
   window.onload = ()=>{
     let data = localStorage.getItem('mezeData');
-    if(data) customers = JSON.parse(data);
+    if(data){ 
+      let parsed = JSON.parse(data);
+      customers = parsed.customers || [];
+      products = parsed.products || products;
+    }
     document.getElementById('githubUser').value = localStorage.getItem('mezeGithubUser') || "";
     document.getElementById('repoName').value = localStorage.getItem('mezeRepo') || "";
     document.getElementById('tokenInput').value = localStorage.getItem('mezeToken') || "";
