@@ -15,19 +15,3 @@ button:hover { background:#1b5e20; }
 .nav { margin-bottom:10px; }
 .nav button { width:auto; margin-right:5px; }
 @media(max-width:600px) { .flex { flex-direction:column; } }
-
-/* Özel placeholder için */
-.date-wrapper { position: relative; }
-.date-placeholder {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #aaa;
-  pointer-events: none;
-  font-size: 14px;
-}
-.date-wrapper input:focus + .date-placeholder,
-.date-wrapper input:not(:placeholder-shown) + .date-placeholder {
-  display: none;
-}

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meze Finans</title>
-  <link rel="stylesheet" href="style.css?v=1.4">
+  <link rel="stylesheet" href="style.css?v=1.5">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
@@ -46,10 +46,8 @@
   <h3>Siparişler</h3>
   <div id="ordersList"></div>
   <h4>Yeni Sipariş</h4>
-  <div class="date-wrapper">
-    <input type="date" id="orderDate">
-    <span class="date-placeholder">Yeni Sipariş – Tarih Seç</span>
-  </div>
+  <label for="orderDate">Tarih Gir:</label>
+  <input type="date" id="orderDate">
   <div id="productLines"></div>
   <button onclick="addProductLine()">+ Ürün Satırı</button>
   <button onclick="saveOrder()">Sipariş Kaydet</button>
@@ -57,6 +55,7 @@
   <h3>Ödemeler</h3>
   <div id="paymentsList"></div>
   <h4>Yeni Ödeme</h4>
+  <label for="paymentDate">Tarih Gir:</label>
   <input type="date" id="paymentDate">
   <input type="number" id="paymentAmount" placeholder="Tutar (TL)">
   <select id="paymentType">
@@ -82,6 +81,6 @@
   <button onclick="pushProducts()">Ürün Listesini Kaydet</button>
 </div>
 
-<script src="script.js?v=1.4"></script>
+<script src="script.js?v=1.5"></script>
 </body>
 </html>
