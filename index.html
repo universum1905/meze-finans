@@ -19,6 +19,7 @@
     .flex { display:flex; gap:10px; }
     .flex input, .flex select { flex:1; }
     .balance { font-weight:bold; font-size:1.2em; color:#d32f2f; margin:10px 0; }
+    .editable { background: #ffffdd; }
     @media(max-width:600px) {
       .flex { flex-direction:column; }
     }
@@ -47,7 +48,7 @@
 
 <div class="container hidden" id="customerPage">
   <button onclick="backToMain()">← Geri</button>
-  <h2 id="customerNameTitle"></h2>
+  <h2 id="customerNameTitle" contenteditable="true" onblur="updateCustomerName()"></h2>
   <div class="balance" id="balanceInfo"></div>
 
   <h3>Siparişler</h3>
@@ -143,6 +144,12 @@
     loadCustomers();
   }
 
+  function updateCustomerName() {
+    customers[currentCustomerIndex].name = document.getElementById('customerNameTitle').textContent;
+    saveData();
+    loadCustomers();
+  }
+
   function addProductLine() {
     let container = document.getElementById('productLines');
     let div = document.createElement('div');
@@ -210,9 +217,13 @@
       header.innerHTML = `<span>${o.date}</span><span>${o.total} TL</span>`;
       let details = document.createElement('div');
       details.className="order-details hidden";
-      o.items.forEach(it=>{
+      o.items.forEach((it,itx)=>{
         let p = document.createElement('p');
-        p.textContent = `${it.name} - ${it.qty} kg/adet - ${it.price} TL`;
+        p.innerHTML = `
+          <input value="${it.name}" onchange="editOrderItem(${idx},${itx},'name',this.value)">
+          <input type="number" value="${it.qty}" onchange="editOrderItem(${idx},${itx},'qty',this.value)">
+          <input type="number" value="${it.price}" onchange="editOrderItem(${idx},${itx},'price',this.value)">
+        `;
         details.appendChild(p);
       });
       header.onclick = ()=>details.classList.toggle('hidden');
@@ -223,11 +234,34 @@
 
     let paymentsList = document.getElementById('paymentsList');
     paymentsList.innerHTML="";
-    cust.payments.forEach(p=>{
+    cust.payments.forEach((p,idx)=>{
       let line = document.createElement('p');
-      line.textContent = `${p.date} - ${p.amount} TL (${p.type})`;
+      line.innerHTML = `
+        <input type="date" value="${p.date}" onchange="editPayment(${idx},'date',this.value)">
+        <input type="number" value="${p.amount}" onchange="editPayment(${idx},'amount',this.value)">
+        <select onchange="editPayment(${idx},'type',this.value)">
+          <option ${p.type=='Nakit'?'selected':''}>Nakit</option>
+          <option ${p.type=='Havale'?'selected':''}>Havale</option>
+          <option ${p.type=='POS'?'selected':''}>POS</option>
+        </select>
+      `;
       paymentsList.appendChild(line);
     });
+  }
+
+  function editOrderItem(orderIdx, itemIdx, field, value){
+    if(field=='qty' || field=='price') value = parseFloat(value)||0;
+    customers[currentCustomerIndex].orders[orderIdx].items[itemIdx][field] = value;
+    customers[currentCustomerIndex].orders[orderIdx].total = customers[currentCustomerIndex].orders[orderIdx].items.reduce((s,it)=>s+(parseFloat(it.price)||0),0);
+    saveData();
+    renderCustomer();
+  }
+
+  function editPayment(payIdx, field, value){
+    if(field=='amount') value = parseFloat(value)||0;
+    customers[currentCustomerIndex].payments[payIdx][field] = value;
+    saveData();
+    renderCustomer();
   }
 
   function calcBalance(cust) {
