@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meze Finans</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f8f8f8; }
+    header { background:#2e7d32; color:white; padding:10px; text-align:center; font-size:1.5em; }
+    .container { max-width:900px; margin:20px auto; background:white; padding:15px; border-radius:8px; box-shadow:0 0 5px rgba(0,0,0,0.1); }
+    h2 { margin-top:0; }
+    .hidden { display:none; }
+    input, select, button { width:100%; padding:8px; margin:5px 0; border:1px solid #ccc; border-radius:4px; }
+    button { background:#2e7d32; color:white; border:none; cursor:pointer; }
+    button:hover { background:#1b5e20; }
+    .customer-item { padding:10px; border-bottom:1px solid #ddd; cursor:pointer; }
+    .order-header { background:#eee; padding:8px; cursor:pointer; display:flex; justify-content:space-between; }
+    .order-details { padding:8px; background:#fafafa; }
+    .flex { display:flex; gap:10px; }
+    .flex input, .flex select { flex:1; }
+    .balance { font-weight:bold; font-size:1.2em; color:#d32f2f; margin:10px 0; }
+    @media(max-width:600px) {
+      .flex { flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="logo.jpeg" alt="Logo" style="height:40px; vertical-align:middle;"> Meze Finans
+</header>
+
+<div class="container" id="loginPage">
+  <h2>Giriş Yap</h2>
+  <input type="password" id="password" placeholder="Şifre">
+  <button onclick="login()">Giriş</button>
+  <p id="loginError" style="color:red;"></p>
+</div>
+
+<div class="container hidden" id="mainPage">
+  <h2>Müşteriler</h2>
+  <div id="customerList"></div>
+  <h3>Yeni Müşteri Ekle</h3>
+  <input type="text" id="newCustomerName" placeholder="Müşteri Adı">
+  <button onclick="addCustomer()">Ekle</button>
+</div>
+
+<div class="container hidden" id="customerPage">
+  <button onclick="backToMain()">← Geri</button>
+  <h2 id="customerNameTitle"></h2>
+  <div class="balance" id="balanceInfo"></div>
+
+  <h3>Siparişler</h3>
+  <div id="ordersList"></div>
+  <h4>Yeni Sipariş</h4>
+  <input type="date" id="orderDate">
+  <div id="productLines">
+    <div class="flex">
+      <select class="productName">
+        <option>Pancarlı Kısır</option>
+        <option>Kısır</option>
+        <option>Ezme</option>
+        <option>Haydari</option>
+        <option>Y. Köz Biber</option>
+        <option>Pembe Sultan</option>
+        <option>Sarma</option>
+        <option>İçli Köfte</option>
+      </select>
+      <select class="productQty">
+        <option value="0.5">0.5</option><option value="1">1</option>
+        <option value="1.5">1.5</option><option value="2">2</option>
+        <option value="2.5">2.5</option><option value="3">3</option>
+      </select>
+      <input type="number" class="productPrice" placeholder="Fiyat (TL)">
+    </div>
+  </div>
+  <button onclick="addProductLine()">+ Ürün Satırı</button>
+  <button onclick="saveOrder()">Sipariş Kaydet</button>
+
+  <h3>Ödemeler</h3>
+  <div id="paymentsList"></div>
+  <h4>Yeni Ödeme</h4>
+  <input type="date" id="paymentDate">
+  <input type="number" id="paymentAmount" placeholder="Tutar (TL)">
+  <select id="paymentType">
+    <option>Nakit</option>
+    <option>Havale</option>
+    <option>POS</option>
+  </select>
+  <button onclick="savePayment()">Ödeme Kaydet</button>
+</div>
+
+<script>
+  let password = "170714";
+  let customers = [];
+
+  function login() {
+    let pass = document.getElementById('password').value;
+    if(pass === password) {
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('mainPage').classList.remove('hidden');
+      loadCustomers();
+    } else {
+      document.getElementById('loginError').textContent = "Hatalı şifre!";
+    }
+  }
+
+  function addCustomer() {
+    let name = document.getElementById('newCustomerName').value;
+    if(!name) return;
+    customers.push({name:name, orders:[], payments:[]});
+    document.getElementById('newCustomerName').value="";
+    saveData();
+    loadCustomers();
+  }
+
+  function loadCustomers() {
+    let list = document.getElementById('customerList');
+    list.innerHTML="";
+    customers.forEach((c, i) => {
+      let div = document.createElement('div');
+      div.className="customer-item";
+      div.textContent = c.name + " - Bakiye: " + calcBalance(c) + " TL";
+      div.onclick = ()=>openCustomer(i);
+      list.appendChild(div);
+    });
+  }
+
+  let currentCustomerIndex = -1;
+
+  function openCustomer(i) {
+    currentCustomerIndex = i;
+    document.getElementById('mainPage').classList.add('hidden');
+    document.getElementById('customerPage').classList.remove('hidden');
+    document.getElementById('customerNameTitle').textContent = customers[i].name;
+    renderCustomer();
+  }
+
+  function backToMain() {
+    document.getElementById('customerPage').classList.add('hidden');
+    document.getElementById('mainPage').classList.remove('hidden');
+    saveData();
+    loadCustomers();
+  }
+
+  function addProductLine() {
+    let container = document.getElementById('productLines');
+    let div = document.createElement('div');
+    div.className="flex";
+    div.innerHTML = `
+      <select class="productName">
+        <option>Pancarlı Kısır</option><option>Kısır</option><option>Ezme</option>
+        <option>Haydari</option><option>Y. Köz Biber</option><option>Pembe Sultan</option>
+        <option>Sarma</option><option>İçli Köfte</option>
+      </select>
+      <select class="productQty">
+        <option value="0.5">0.5</option><option value="1">1</option><option value="1.5">1.5</option>
+        <option value="2">2</option><option value="2.5">2.5</option><option value="3">3</option>
+      </select>
+      <input type="number" class="productPrice" placeholder="Fiyat (TL)">
+    `;
+    container.appendChild(div);
+  }
+
+  function saveOrder() {
+    let date = document.getElementById('orderDate').value;
+    if(!date) return alert("Tarih gerekli!");
+    let names = document.querySelectorAll('.productName');
+    let qtys = document.querySelectorAll('.productQty');
+    let prices = document.querySelectorAll('.productPrice');
+    let items = [];
+    let total = 0;
+    for(let i=0;i<names.length;i++){
+      let n = names[i].value;
+      let q = parseFloat(qtys[i].value);
+      let p = parseFloat(prices[i].value)||0;
+      total += p;
+      items.push({name:n, qty:q, price:p});
+    }
+    customers[currentCustomerIndex].orders.push({date:date, items:items, total:total});
+    document.getElementById('orderDate').value="";
+    document.getElementById('productLines').innerHTML="";
+    addProductLine();
+    saveData();
+    renderCustomer();
+  }
+
+  function savePayment() {
+    let date = document.getElementById('paymentDate').value;
+    let amount = parseFloat(document.getElementById('paymentAmount').value);
+    let type = document.getElementById('paymentType').value;
+    if(!date || !amount) return alert("Tarih ve tutar gerekli!");
+    customers[currentCustomerIndex].payments.push({date:date, amount:amount, type:type});
+    document.getElementById('paymentDate').value="";
+    document.getElementById('paymentAmount').value="";
+    saveData();
+    renderCustomer();
+  }
+
+  function renderCustomer() {
+    let cust = customers[currentCustomerIndex];
+    document.getElementById('balanceInfo').textContent = "Bakiye: " + calcBalance(cust) + " TL";
+
+    let ordersList = document.getElementById('ordersList');
+    ordersList.innerHTML="";
+    cust.orders.forEach((o, idx) => {
+      let div = document.createElement('div');
+      let header = document.createElement('div');
+      header.className="order-header";
+      header.innerHTML = `<span>${o.date}</span><span>${o.total} TL</span>`;
+      let details = document.createElement('div');
+      details.className="order-details hidden";
+      o.items.forEach(it=>{
+        let p = document.createElement('p');
+        p.textContent = `${it.name} - ${it.qty} kg/adet - ${it.price} TL`;
+        details.appendChild(p);
+      });
+      header.onclick = ()=>details.classList.toggle('hidden');
+      div.appendChild(header);
+      div.appendChild(details);
+      ordersList.appendChild(div);
+    });
+
+    let paymentsList = document.getElementById('paymentsList');
+    paymentsList.innerHTML="";
+    cust.payments.forEach(p=>{
+      let line = document.createElement('p');
+      line.textContent = `${p.date} - ${p.amount} TL (${p.type})`;
+      paymentsList.appendChild(line);
+    });
+  }
+
+  function calcBalance(cust) {
+    let totalOrders = cust.orders.reduce((s,o)=>s+o.total,0);
+    let totalPayments = cust.payments.reduce((s,p)=>s+p.amount,0);
+    return (totalOrders - totalPayments).toFixed(2);
+  }
+
+  function saveData(){
+    localStorage.setItem('mezeData', JSON.stringify(customers));
+  }
+
+  window.onload = ()=>{
+    let data = localStorage.getItem('mezeData');
+    if(data) customers = JSON.parse(data);
+  }
+</script>
+
+</body>
+</html>
