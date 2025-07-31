@@ -26,7 +26,7 @@
 <body>
 
 <header>
-  <img src="logo.jpeg" alt="Logo" style="height:40px; vertical-align:middle;"> Meze Finans
+  <img src="meze.jpeg" alt="Logo" style="height:40px; vertical-align:middle;"> Meze Finans
 </header>
 
 <div class="container" id="loginPage">
@@ -91,7 +91,7 @@
   let customers = [];
   let GITHUB_USERNAME, REPO_NAME, TOKEN;
 
-  function login() {
+  async function login() {
     let pass = document.getElementById('password').value;
     if(pass !== password) { document.getElementById('loginError').textContent="Hatalı şifre!"; return; }
     GITHUB_USERNAME = document.getElementById('githubUser').value;
@@ -103,6 +103,20 @@
     localStorage.setItem("mezeToken",TOKEN);
     document.getElementById('loginPage').classList.add('hidden');
     document.getElementById('mainPage').classList.remove('hidden');
+    await loadFromGitHub();
+  }
+
+  async function loadFromGitHub(){
+    let url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/mezeData.json`;
+    let res = await fetch(url, { headers: { "Authorization": "token " + TOKEN }});
+    if(res.ok){
+      let data = await res.json();
+      let content = atob(data.content);
+      customers = JSON.parse(content).customers || [];
+    } else {
+      customers = [];
+    }
+    saveData();
     loadCustomers();
   }
 
