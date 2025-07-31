@@ -28,7 +28,7 @@
 <body>
 
 <header>
-  <img src="meze.jpeg" alt="Logo" style="height:40px; vertical-align:middle;"> Meze Finans
+  <img src="logo.jpeg" alt="Logo" style="height:40px; vertical-align:middle;"> Meze Finans
 </header>
 
 <div class="container" id="loginPage">
@@ -65,7 +65,6 @@
   <div id="ordersList"></div>
   <h4>Yeni Sipariş</h4>
   <input type="date" id="orderDate" placeholder="Yeni Sipariş – Tarih Seç">
-  <input type="date" id="orderDate">
   <div id="productLines"></div>
   <button onclick="addProductLine()">+ Ürün Satırı</button>
   <button onclick="saveOrder()">Sipariş Kaydet</button>
@@ -101,15 +100,15 @@
   let password = "170714";
   let customers = [];
   let products = [
-  {name:"Pancarlı Kısır", unit:"kg", price:380},
-  {name:"Kısır", unit:"kg", price:380},
-  {name:"Ezme", unit:"kg", price:380},
-  {name:"Haydari", unit:"kg", price:380},
-  {name:"Y. Köz Biber", unit:"kg", price:380},
-  {name:"Pembe Sultan", unit:"kg", price:380},
-  {name:"Sarma", unit:"kg", price:400},
-  {name:"İçli Köfte", unit:"adet", price:45}
-];
+    {name:"Pancarlı Kısır", unit:"kg", price:380},
+    {name:"Kısır", unit:"kg", price:380},
+    {name:"Ezme", unit:"kg", price:380},
+    {name:"Haydari", unit:"kg", price:380},
+    {name:"Y. Köz Biber", unit:"kg", price:380},
+    {name:"Pembe Sultan", unit:"kg", price:380},
+    {name:"Sarma", unit:"kg", price:400},
+    {name:"İçli Köfte", unit:"adet", price:45}
+  ];
   let GITHUB_USERNAME, REPO_NAME, TOKEN;
 
   async function login() {
