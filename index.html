@@ -26,12 +26,15 @@
 <body>
 
 <header>
-  <img src="meze.jpeg" alt="Logo" style="height:40px; vertical-align:middle;"> Meze Finans
+  <img src="logo.jpeg" alt="Logo" style="height:40px; vertical-align:middle;"> Meze Finans
 </header>
 
 <div class="container" id="loginPage">
   <h2>Giriş Yap</h2>
   <input type="password" id="password" placeholder="Şifre">
+  <input type="text" id="githubUser" placeholder="GitHub Kullanıcı Adı">
+  <input type="text" id="repoName" placeholder="Repo Adı (örn: meze-finans)">
+  <input type="password" id="tokenInput" placeholder="GitHub Token">
   <button onclick="login()">Giriş</button>
   <p id="loginError" style="color:red;"></p>
 </div>
@@ -84,22 +87,23 @@
 </div>
 
 <script>
-  // GİTHUB AYARLARI
-  const GITHUB_USERNAME = "universum1905";
-  const REPO_NAME = "meze-finans";
-  const FILE_PATH = "mezeData.json";
-  const TOKEN = "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";
-
   let password = "170714";
   let customers = [];
+  let GITHUB_USERNAME, REPO_NAME, TOKEN;
 
   function login() {
     let pass = document.getElementById('password').value;
-    if(pass === password) {
-      document.getElementById('loginPage').classList.add('hidden');
-      document.getElementById('mainPage').classList.remove('hidden');
-      loadCustomers();
-    } else document.getElementById('loginError').textContent = "Hatalı şifre!";
+    if(pass !== password) { document.getElementById('loginError').textContent="Hatalı şifre!"; return; }
+    GITHUB_USERNAME = document.getElementById('githubUser').value;
+    REPO_NAME = document.getElementById('repoName').value;
+    TOKEN = document.getElementById('tokenInput').value;
+    if(!GITHUB_USERNAME || !REPO_NAME || !TOKEN){ alert("GitHub bilgilerini girin!"); return; }
+    localStorage.setItem("mezeGithubUser",GITHUB_USERNAME);
+    localStorage.setItem("mezeRepo",REPO_NAME);
+    localStorage.setItem("mezeToken",TOKEN);
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('mainPage').classList.remove('hidden');
+    loadCustomers();
   }
 
   function addCustomer() {
@@ -221,20 +225,14 @@
 
   async function pushToGitHub(){
     let content = btoa(JSON.stringify({customers:customers}, null, 2));
-    let url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`;
-    let res = await fetch(url, {
-      headers: { "Authorization": "token " + TOKEN }
-    });
+    let url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/mezeData.json`;
+    let res = await fetch(url, { headers: { "Authorization": "token " + TOKEN } });
     let data = await res.json();
     let sha = data.sha;
     await fetch(url, {
       method: "PUT",
       headers: { "Authorization": "token " + TOKEN, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: "Meze Finans Otomatik Güncelleme",
-        content: content,
-        sha: sha
-      })
+      body: JSON.stringify({ message: "Meze Finans Otomatik Güncelleme", content: content, sha: sha })
     });
     alert("Veriler GitHub'a kaydedildi!");
   }
@@ -262,7 +260,13 @@
     doc.save("rapor_"+cust.name+".pdf");
   }
 
-  window.onload = ()=>{ let data = localStorage.getItem('mezeData'); if(data) customers = JSON.parse(data); }
+  window.onload = ()=>{
+    let data = localStorage.getItem('mezeData');
+    if(data) customers = JSON.parse(data);
+    document.getElementById('githubUser').value = localStorage.getItem('mezeGithubUser') || "";
+    document.getElementById('repoName').value = localStorage.getItem('mezeRepo') || "";
+    document.getElementById('tokenInput').value = localStorage.getItem('mezeToken') || "";
+  }
 </script>
 </body>
 </html>
