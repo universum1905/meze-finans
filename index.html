@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meze Finans</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f8f8f8; }
     header { background:#2e7d32; color:white; padding:10px; text-align:center; font-size:1.5em; }
@@ -19,10 +20,7 @@
     .flex { display:flex; gap:10px; }
     .flex input, .flex select { flex:1; }
     .balance { font-weight:bold; font-size:1.2em; color:#d32f2f; margin:10px 0; }
-    .editable { background: #ffffdd; }
-    @media(max-width:600px) {
-      .flex { flex-direction:column; }
-    }
+    @media(max-width:600px) { .flex { flex-direction:column; } }
   </style>
 </head>
 <body>
@@ -50,6 +48,8 @@
   <button onclick="backToMain()">← Geri</button>
   <h2 id="customerNameTitle" contenteditable="true" onblur="updateCustomerName()"></h2>
   <div class="balance" id="balanceInfo"></div>
+  <button onclick="generatePDF()">PDF Oluştur</button>
+  <button onclick="pushToGitHub()">Kaydet (GitHub)</button>
 
   <h3>Siparişler</h3>
   <div id="ordersList"></div>
@@ -58,19 +58,13 @@
   <div id="productLines">
     <div class="flex">
       <select class="productName">
-        <option>Pancarlı Kısır</option>
-        <option>Kısır</option>
-        <option>Ezme</option>
-        <option>Haydari</option>
-        <option>Y. Köz Biber</option>
-        <option>Pembe Sultan</option>
-        <option>Sarma</option>
-        <option>İçli Köfte</option>
+        <option>Pancarlı Kısır</option><option>Kısır</option><option>Ezme</option>
+        <option>Haydari</option><option>Y. Köz Biber</option><option>Pembe Sultan</option>
+        <option>Sarma</option><option>İçli Köfte</option>
       </select>
       <select class="productQty">
-        <option value="0.5">0.5</option><option value="1">1</option>
-        <option value="1.5">1.5</option><option value="2">2</option>
-        <option value="2.5">2.5</option><option value="3">3</option>
+        <option value="0.5">0.5</option><option value="1">1</option><option value="1.5">1.5</option>
+        <option value="2">2</option><option value="2.5">2.5</option><option value="3">3</option>
       </select>
       <input type="number" class="productPrice" placeholder="Fiyat (TL)">
     </div>
@@ -84,14 +78,18 @@
   <input type="date" id="paymentDate">
   <input type="number" id="paymentAmount" placeholder="Tutar (TL)">
   <select id="paymentType">
-    <option>Nakit</option>
-    <option>Havale</option>
-    <option>POS</option>
+    <option>Nakit</option><option>Havale</option><option>POS</option>
   </select>
   <button onclick="savePayment()">Ödeme Kaydet</button>
 </div>
 
 <script>
+  // GİTHUB AYARLARI
+  const GITHUB_USERNAME = "universum1905";
+  const REPO_NAME = "meze-finans";
+  const FILE_PATH = "mezeData.json";
+  const TOKEN = "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";
+
   let password = "170714";
   let customers = [];
 
@@ -101,9 +99,7 @@
       document.getElementById('loginPage').classList.add('hidden');
       document.getElementById('mainPage').classList.remove('hidden');
       loadCustomers();
-    } else {
-      document.getElementById('loginError').textContent = "Hatalı şifre!";
-    }
+    } else document.getElementById('loginError').textContent = "Hatalı şifre!";
   }
 
   function addCustomer() {
@@ -154,18 +150,7 @@
     let container = document.getElementById('productLines');
     let div = document.createElement('div');
     div.className="flex";
-    div.innerHTML = `
-      <select class="productName">
-        <option>Pancarlı Kısır</option><option>Kısır</option><option>Ezme</option>
-        <option>Haydari</option><option>Y. Köz Biber</option><option>Pembe Sultan</option>
-        <option>Sarma</option><option>İçli Köfte</option>
-      </select>
-      <select class="productQty">
-        <option value="0.5">0.5</option><option value="1">1</option><option value="1.5">1.5</option>
-        <option value="2">2</option><option value="2.5">2.5</option><option value="3">3</option>
-      </select>
-      <input type="number" class="productPrice" placeholder="Fiyat (TL)">
-    `;
+    div.innerHTML = document.querySelector('.flex').innerHTML;
     container.appendChild(div);
   }
 
@@ -175,19 +160,14 @@
     let names = document.querySelectorAll('.productName');
     let qtys = document.querySelectorAll('.productQty');
     let prices = document.querySelectorAll('.productPrice');
-    let items = [];
-    let total = 0;
+    let items = [], total = 0;
     for(let i=0;i<names.length;i++){
-      let n = names[i].value;
-      let q = parseFloat(qtys[i].value);
-      let p = parseFloat(prices[i].value)||0;
-      total += p;
-      items.push({name:n, qty:q, price:p});
+      let n = names[i].value, q = parseFloat(qtys[i].value), p = parseFloat(prices[i].value)||0;
+      total += p; items.push({name:n, qty:q, price:p});
     }
     customers[currentCustomerIndex].orders.push({date:date, items:items, total:total});
     document.getElementById('orderDate').value="";
-    document.getElementById('productLines').innerHTML="";
-    addProductLine();
+    document.getElementById('productLines').innerHTML=document.querySelector('.flex').outerHTML;
     saveData();
     renderCustomer();
   }
@@ -207,61 +187,26 @@
   function renderCustomer() {
     let cust = customers[currentCustomerIndex];
     document.getElementById('balanceInfo').textContent = "Bakiye: " + calcBalance(cust) + " TL";
-
-    let ordersList = document.getElementById('ordersList');
-    ordersList.innerHTML="";
-    cust.orders.forEach((o, idx) => {
+    let ordersList = document.getElementById('ordersList'); ordersList.innerHTML="";
+    cust.orders.forEach((o) => {
       let div = document.createElement('div');
       let header = document.createElement('div');
       header.className="order-header";
       header.innerHTML = `<span>${o.date}</span><span>${o.total} TL</span>`;
-      let details = document.createElement('div');
-      details.className="order-details hidden";
-      o.items.forEach((it,itx)=>{
+      let details = document.createElement('div'); details.className="order-details hidden";
+      o.items.forEach(it=>{
         let p = document.createElement('p');
-        p.innerHTML = `
-          <input value="${it.name}" onchange="editOrderItem(${idx},${itx},'name',this.value)">
-          <input type="number" value="${it.qty}" onchange="editOrderItem(${idx},${itx},'qty',this.value)">
-          <input type="number" value="${it.price}" onchange="editOrderItem(${idx},${itx},'price',this.value)">
-        `;
+        p.textContent = `${it.name} - ${it.qty} kg/adet - ${it.price} TL`;
         details.appendChild(p);
       });
       header.onclick = ()=>details.classList.toggle('hidden');
-      div.appendChild(header);
-      div.appendChild(details);
-      ordersList.appendChild(div);
+      div.appendChild(header); div.appendChild(details); ordersList.appendChild(div);
     });
-
-    let paymentsList = document.getElementById('paymentsList');
-    paymentsList.innerHTML="";
-    cust.payments.forEach((p,idx)=>{
-      let line = document.createElement('p');
-      line.innerHTML = `
-        <input type="date" value="${p.date}" onchange="editPayment(${idx},'date',this.value)">
-        <input type="number" value="${p.amount}" onchange="editPayment(${idx},'amount',this.value)">
-        <select onchange="editPayment(${idx},'type',this.value)">
-          <option ${p.type=='Nakit'?'selected':''}>Nakit</option>
-          <option ${p.type=='Havale'?'selected':''}>Havale</option>
-          <option ${p.type=='POS'?'selected':''}>POS</option>
-        </select>
-      `;
+    let paymentsList = document.getElementById('paymentsList'); paymentsList.innerHTML="";
+    cust.payments.forEach(p=>{
+      let line = document.createElement('p'); line.textContent = `${p.date} - ${p.amount} TL (${p.type})`;
       paymentsList.appendChild(line);
     });
-  }
-
-  function editOrderItem(orderIdx, itemIdx, field, value){
-    if(field=='qty' || field=='price') value = parseFloat(value)||0;
-    customers[currentCustomerIndex].orders[orderIdx].items[itemIdx][field] = value;
-    customers[currentCustomerIndex].orders[orderIdx].total = customers[currentCustomerIndex].orders[orderIdx].items.reduce((s,it)=>s+(parseFloat(it.price)||0),0);
-    saveData();
-    renderCustomer();
-  }
-
-  function editPayment(payIdx, field, value){
-    if(field=='amount') value = parseFloat(value)||0;
-    customers[currentCustomerIndex].payments[payIdx][field] = value;
-    saveData();
-    renderCustomer();
   }
 
   function calcBalance(cust) {
@@ -274,11 +219,50 @@
     localStorage.setItem('mezeData', JSON.stringify(customers));
   }
 
-  window.onload = ()=>{
-    let data = localStorage.getItem('mezeData');
-    if(data) customers = JSON.parse(data);
+  async function pushToGitHub(){
+    let content = btoa(JSON.stringify({customers:customers}, null, 2));
+    let url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`;
+    let res = await fetch(url, {
+      headers: { "Authorization": "token " + TOKEN }
+    });
+    let data = await res.json();
+    let sha = data.sha;
+    await fetch(url, {
+      method: "PUT",
+      headers: { "Authorization": "token " + TOKEN, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "Meze Finans Otomatik Güncelleme",
+        content: content,
+        sha: sha
+      })
+    });
+    alert("Veriler GitHub'a kaydedildi!");
   }
-</script>
 
+  async function generatePDF(){
+    const { jsPDF } = window.jspdf;
+    let doc = new jsPDF();
+    let cust = customers[currentCustomerIndex];
+    doc.text("Meze Finans Raporu", 10, 10);
+    doc.text("Müşteri: "+cust.name, 10, 20);
+    doc.text("Tarih: "+new Date().toLocaleDateString(), 10, 30);
+    let y=40;
+    doc.text("Siparişler:", 10, y); y+=10;
+    cust.orders.forEach(o=>{
+      doc.text(o.date+" - Toplam: "+o.total+" TL",10,y); y+=10;
+      o.items.forEach(it=>{
+        doc.text("   "+it.name+" - "+it.qty+" - "+it.price+" TL",15,y); y+=10;
+      });
+    });
+    y+=10; doc.text("Ödemeler:",10,y); y+=10;
+    cust.payments.forEach(p=>{
+      doc.text(p.date+" - "+p.amount+" TL ("+p.type+")",10,y); y+=10;
+    });
+    y+=10; doc.text("Bakiye: "+calcBalance(cust)+" TL",10,y);
+    doc.save("rapor_"+cust.name+".pdf");
+  }
+
+  window.onload = ()=>{ let data = localStorage.getItem('mezeData'); if(data) customers = JSON.parse(data); }
+</script>
 </body>
 </html>
