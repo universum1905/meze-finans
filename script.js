@@ -1,10 +1,17 @@
 let products = [];
 let customers = [];
-let GITHUB_USERNAME = "KULLANICI_ADIN";
-let REPO_NAME = "REPO_ADIN";
-let TOKEN = "PERSONAL_ACCESS_TOKEN";
+let GITHUB_USERNAME, REPO_NAME, TOKEN;
 
-// JSON dosyalarını yükle
+function startApp(){
+  GITHUB_USERNAME = document.getElementById("ghUser").value;
+  REPO_NAME = document.getElementById("ghRepo").value;
+  TOKEN = document.getElementById("ghToken").value;
+  if(!GITHUB_USERNAME || !REPO_NAME || !TOKEN) return alert("Tüm bilgileri girin!");
+  document.getElementById("loginPage").classList.add("hidden");
+  document.getElementById("mainPage").classList.remove("hidden");
+  loadData();
+}
+
 async function loadData() {
   // Ürünler
   let prodRes = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/products.json`, {
@@ -23,30 +30,20 @@ async function loadData() {
   renderCustomers();
 }
 
-// JSON’a yaz (GitHub’a)
 async function saveData() {
   let content = btoa(JSON.stringify({ customers }, null, 2));
   let url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/mezeData.json`;
-
-  // mevcut SHA’yı al
   let res = await fetch(url, { headers: { Authorization: "token " + TOKEN } });
   let data = await res.json();
   let sha = data.sha;
-
-  // PUT isteği
   await fetch(url, {
     method: "PUT",
     headers: { Authorization: "token " + TOKEN, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: "Veri güncellendi",
-      content: content,
-      sha: sha
-    })
+    body: JSON.stringify({ message: "Veri güncellendi", content, sha })
   });
   alert("Veri kaydedildi!");
 }
 
-// Müşteri listesi
 function renderCustomers() {
   let list = document.getElementById("customerList");
   list.innerHTML = "";
@@ -71,15 +68,15 @@ function addCustomer() {
 let currentCustomerIndex = -1;
 function openCustomer(i) {
   currentCustomerIndex = i;
-  document.querySelector("#customerPage").classList.remove("hidden");
-  document.querySelector(".container").classList.add("hidden");
+  document.getElementById("mainPage").classList.add("hidden");
+  document.getElementById("customerPage").classList.remove("hidden");
   document.getElementById("customerNameTitle").textContent = customers[i].name;
   renderCustomer();
 }
 
 function backToMain() {
-  document.querySelector("#customerPage").classList.add("hidden");
-  document.querySelector(".container").classList.remove("hidden");
+  document.getElementById("customerPage").classList.add("hidden");
+  document.getElementById("mainPage").classList.remove("hidden");
   renderCustomers();
 }
 
@@ -186,6 +183,3 @@ function savePayment() {
   saveData();
   renderCustomer();
 }
-
-// Başlat
-loadData();

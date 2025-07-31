@@ -11,15 +11,24 @@
     input, select, button { width:100%; padding:8px; margin:5px 0; border:1px solid #ccc; border-radius:4px; }
     button { background:#2e7d32; color:white; border:none; cursor:pointer; }
     button:hover { background:#1b5e20; }
-    .flex { display:flex; gap:10px; }
-    .flex input, .flex select { flex:1; }
+    .hidden { display:none; }
     .customer-item { padding:10px; border-bottom:1px solid #ddd; cursor:pointer; }
     .order-header { background:#eee; padding:8px; display:flex; justify-content:space-between; cursor:pointer; }
     .order-details { padding:8px; background:#fafafa; }
+    .flex { display:flex; gap:10px; }
+    .flex input, .flex select { flex:1; }
   </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="loginPage">
+  <h2>Giriş</h2>
+  <input id="ghUser" placeholder="GitHub Kullanıcı Adı">
+  <input id="ghRepo" placeholder="Repo Adı">
+  <input id="ghToken" type="password" placeholder="Personal Access Token">
+  <button onclick="startApp()">Giriş</button>
+</div>
+
+<div class="container hidden" id="mainPage">
   <h2>Müşteriler</h2>
   <div id="customerList"></div>
   <h3>Yeni Müşteri Ekle</h3>
